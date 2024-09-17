@@ -1,134 +1,86 @@
-// lib/pages/home_page.dart
-
+// Importa o pacote Flutter para criação de interfaces de usuário e widgets.
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:my_ext/models/api_service.dart'; // Importa a função para buscar projetos
-import 'package:my_ext/models/project_model.dart'; // Importa o modelo de projeto
 
-// Página principal do aplicativo
+// Importa o pacote url_launcher para abrir URLs externas no navegador ou em aplicativos apropriados.
+import 'package:url_launcher/url_launcher.dart';
+
+// Define uma nova classe `HomePage` que estende `StatefulWidget`, indicando que este widget tem estado mutável.
 class HomePage extends StatefulWidget {
-  const HomePage({super.key}); // Construtor da página principal
+  // O construtor `const` permite que o widget seja imutável e otimizado pelo Flutter.
+  const HomePage({super.key});
+
+  // Cria o estado associado ao `HomePage` e retorna uma instância da classe `_HomePageState`.
   @override
-  _HomePageState createState() => _HomePageState(); // Cria o estado da página
+  _HomePageState createState() => _HomePageState();
 }
 
+// Define a classe de estado `_HomePageState` para o widget `HomePage`.
+// Esta classe mantém o estado do widget `HomePage`.
 class _HomePageState extends State<HomePage> {
-  final TextEditingController _controller =
-      TextEditingController(); // Controlador do campo de texto
-  List<Project> _projetos = []; // Lista para armazenar os projetos retornados
-  bool _carregando = false; // Flag para indicar se a busca está em andamento
-  String _mensagemErro = ''; // Mensagem de erro a ser exibida
+  // Cria um controlador de texto para gerenciar o texto do campo de entrada.
+  final TextEditingController _controller = TextEditingController();
 
-  // Método para buscar projetos com base no nome de usuário fornecido
-  Future<void> _buscarProjetos() async {
-    setState(() {
-      _carregando = true; // Inicia o carregamento
-      _mensagemErro = ''; // Limpa a mensagem de erro
-    });
-
-    final usuario =
-        _controller.text.trim(); // Obtém o nome de usuário do campo de texto
-    if (usuario.isNotEmpty) {
-      // Verifica se o nome de usuário não está vazio
-      try {
-        final projetos = await getProjects(usuario); // Busca os projetos
-        setState(() {
-          _projetos = projetos; // Atualiza a lista de projetos
-          _carregando = false; // Finaliza o carregamento
-        });
-      } catch (e) {
-        setState(() {
-          _mensagemErro =
-              'User não encontrado, tente novamente'; // Define a mensagem de erro
-          _carregando = false; // Finaliza o carregamento
-        });
+  // Método assíncrono que será chamado quando o botão for pressionado.
+  Future<void> _abrirPerfilGitHub() async {
+    // Obtém o texto do controlador e remove espaços em branco nas extremidades.
+    final username = _controller.text.trim();
+    
+    // Verifica se o nome de usuário não está vazio.
+    if (username.isNotEmpty) {
+      // Constrói a URL para acessar a API do GitHub que lista os repositórios do usuário.
+      final url = 'https://api.github.com/users/$username/repos';
+      
+      // Converte a URL em um objeto `Uri`.
+      final uri = Uri.parse(url);
+      
+      // Verifica se a URL pode ser lançada (se é um URL válido e pode ser tratado pelo sistema).
+      if (await canLaunchUrl(uri)) {
+        // Abre a URL no navegador ou no aplicativo apropriado.
+        await launchUrl(uri);
       }
-    } else {
-      setState(() {
-        _mensagemErro =
-            'Digite um nome de usuário'; // Mensagem de erro se o campo estiver vazio
-        _carregando = false; // Finaliza o carregamento
-      });
     }
   }
 
-  // Método para abrir a URL no navegador
-  Future<void> _abrirUrl(String url) async {
-    final uri = Uri.parse(url); // Converte a URL em um objeto Uri
-    if (await canLaunchUrl(uri)) {
-      // Verifica se a URL pode ser aberta
-      await launchUrl(uri); // Abre a URL
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text(
-                'Não foi possível abrir o link')), // Exibe mensagem de erro
-      );
-    }
-  }
-
+  // O método `build` descreve a interface do usuário usando widgets.
   @override
   Widget build(BuildContext context) {
+    // Retorna um widget Scaffold que fornece uma estrutura básica para a página.
     return Scaffold(
+      // Adiciona uma barra de aplicativos na parte superior da página.
       appBar: AppBar(
-        title: const Text('Repositórios GitHub'), // Título da AppBar
+        // Define o título da barra de aplicativos.
+        title: const Text('API Github link'),
       ),
+      // Define o corpo da página com um `Padding` para adicionar espaçamento ao redor dos widgets internos.
       body: Padding(
-        padding:
-            const EdgeInsets.all(16.0), // Adiciona padding ao corpo da página
+        // Adiciona um preenchimento de 16 pixels ao redor do corpo da página.
+        padding: const EdgeInsets.all(16.0),
+        // Organiza os widgets verticalmente em uma coluna.
         child: Column(
+          // Alinha os widgets no centro da coluna.
           mainAxisAlignment: MainAxisAlignment.center,
+          // Lista de widgets na coluna.
           children: [
-            // Campo de texto para entrada do nome de usuário GitHub
+            // Widget de campo de texto para entrada de dados do usuário.
             TextField(
+              // Associa o controlador de texto ao campo de entrada.
               controller: _controller,
+              // Define a decoração do campo de texto.
               decoration: const InputDecoration(
+                // Define a borda do campo de texto.
                 border: OutlineInputBorder(),
+                // Define o texto do rótulo exibido no campo de texto.
                 labelText: 'Nome de usuário GitHub',
               ),
             ),
-            const SizedBox(
-                height: 16.0), // Espaçamento entre o campo de texto e o botão
-
-            // Botão para buscar repositórios
+            // Adiciona um espaço de 16 pixels entre o campo de texto e o botão.
+            const SizedBox(height: 16.0),
+            // Botão elevado que chama o método `_abrirPerfilGitHub` quando pressionado.
             ElevatedButton(
-              onPressed:
-                  _buscarProjetos, // Chama o método de busca quando pressionado
-              child: const Text('Buscar Repositórios'),
-            ),
-            const SizedBox(
-                height:
-                    16.0), // Espaçamento entre o botão e o conteúdo da lista
-
-            // Indicador de carregamento e mensagem de erro
-            if (_carregando)
-              const CircularProgressIndicator(), // Exibe indicador de carregamento
-            if (_mensagemErro.isNotEmpty)
-              Text(_mensagemErro,
-                  style: const TextStyle(
-                      color: Colors.red)), // Exibe mensagem de erro
-
-            // Lista de repositórios
-            Expanded(
-              child: ListView.builder(
-                itemCount: _projetos.length, // Número de itens na lista
-                itemBuilder: (context, index) {
-                  final projeto =
-                      _projetos[index]; // Obtém o projeto na posição atual
-                  return ListTile(
-                    leading: Image.network(
-                        projeto.userImage), // Exibe a imagem do usuário
-                    title: Text(projeto.name), // Nome do projeto
-                    subtitle:
-                        Text(projeto.fullName), // Nome completo do projeto
-                    onTap: () {
-                      final url =
-                          'https://github.com/${_controller.text.trim()}/${projeto.name}'; // Gera a URL do projeto
-                      _abrirUrl(url); // Abre a URL do projeto
-                    },
-                  );
-                },
-              ),
+              // Define a função a ser chamada quando o botão é pressionado.
+              onPressed: _abrirPerfilGitHub,
+              // Define o texto exibido no botão.
+              child: const Text('Abrir Repositórios'),
             ),
           ],
         ),
